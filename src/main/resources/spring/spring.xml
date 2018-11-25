@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
+
+<!-- 引入属性文件 -->
+    <context:property-placeholder location="classpath:conf.properties"/>
+
+    <!-- 使用Annotation自动注册Bean，解决事物失效问题：在主容器中不扫描@Controller注解，在SpringMvc中只扫描@Controller注解。  -->
+    <context:component-scan base-package="com.ainijar"><!-- base-package 如果多个，用“,”分隔 -->
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+    <!-- 配置 JSR303 Bean Validator 定义 @NotNull 需要hibernate-validator包,springmvc使用hibernate的校验框架validation(和hibernate没有任何关系)-->
+    <!--<bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean" />-->
+
+    <!-- 计划任务配置，用 @Service @Lazy(false)标注类，用@Scheduled(cron = "0 0 2 * * ?")标注方法 -->
+    <!--配置executor线程池，这里executor的含义和java.util.concurrent.Executor是一样的-->
+    <task:executor id="executor" pool-size="3"/>
+    <!--scheduler的pool-size是ScheduledExecutorService线程池-->
+    <task:scheduler id="scheduler" pool-size="3"/>
+    <task:annotation-driven scheduler="scheduler" executor="executor" proxy-target-class="true"/>
+
+    <!--不能写到mvc中，要不然在拦截器中取不到-->
+    <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <property name="defaultEncoding" value="utf-8" />
+        <property name="useCodeAsDefaultMessage" value="true" />
+        <property name="cacheSeconds" value="10"></property>
+        <property name="basenames">
+            <list>
+                <value>classpath:messages</value>
+            </list>
+        </property>
+    </bean>
+
+    <import resource="classpath:spring/spring-mongo.xml"/>
+    <import resource="classpath:spring/spring-redis.xml"/>
+</beans>
