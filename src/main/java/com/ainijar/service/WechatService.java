@@ -10,4 +10,6 @@ public interface WechatService {
     QrCodeResult createQrCode(QrCode qrCode);
 
     String downloadQrCode(String ticket);
+
+    boolean signature(String signature, String timestamp, String nonce);
 }
