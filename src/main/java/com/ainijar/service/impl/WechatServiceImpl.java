@@ -2,19 +2,20 @@ package com.ainijar.service.impl;
 
 import com.ainijar.common.constant.WechatConst;
 import com.ainijar.common.util.RedisUtil;
-import com.ainijar.model.AccessToken;
-import com.ainijar.model.QrCode;
-import com.ainijar.model.QrCodeResult;
-import com.ainijar.model.ResultCheck;
+import com.ainijar.model.*;
 import com.ainijar.service.WechatService;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
@@ -99,6 +100,7 @@ public class WechatServiceImpl implements WechatService {
      * @param nonce     加密随机字符串
      * @return 是否是微信消息
      */
+    @Override
     public boolean signature(String signature, String timestamp, String nonce) {
         if (signature == null ||timestamp == null || nonce == null){
             return false;
@@ -112,80 +114,26 @@ public class WechatServiceImpl implements WechatService {
         return signature.equals(str);
     }
 
-
-//    public String wxMessage(HttpServletRequest request) {
-//
-//        Map<String, String> map = wxUtils.receiveMessage(request);
-////		System.out.println(map.toString());
-//        if (map == null || map.size() == 0) {
-//            return null;
-//        }
-//
-//        // 微信消息类型判断
-//        String msgType = map.get("MsgType");
-//        String reply = null;
-//
-//        switch (msgType) {
-//            case Configuration.MESSAGE_TEXT:
-//                reply = wxUtils.replyTextMessage(map, "你好");
-//                // System.out.println(reply);
-//
-////			if (map.get("Content").equals("1")) {
-////				Article article = new Article();
-////				article.setTitle("测试公众号");
-////				article.setDescription("测试描述");
-////				article.setPicUrl("http://img3.imgtn.bdimg.com/it/u=2487184179,3100424350&fm=23&gp=0.jpg");
-////				article.setUrl("http://www.baidu.com");
-////
-////				List<Article> articles = new ArrayList<>();
-////				articles.add(article);
-////
-////				Article article1 = new Article();
-////				article1.setTitle("测试公众号2");
-////				article1.setDescription("测试描述2");
-////				article1.setPicUrl("https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=1353085406,3342692239&fm=23&gp=0.jpg");
-////				article1.setUrl("http://www.baidu.com");
-////
-////				articles.add(article1);
-////				reply = wxUtils.replyNewsMessage(map, articles);
-////				// System.out.println(reply);
-////			} else if (map.get("Content").equals("2")) {
-////				Article article = new Article();
-////				article.setTitle("测试公众号2");
-////				article.setDescription("测试描述2");
-////				article.setPicUrl("https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=1353085406,3342692239&fm=23&gp=0.jpg");
-////				article.setUrl("http://www.baidu.com");
-////
-////				List<Article> articles = new ArrayList<>();
-////				articles.add(article);
-////
-////				reply = wxUtils.replyNewsMessage(map, articles);
-////			}
-//
-//                break;
-//            case Configuration.MESSAGE_EVENT:
-//                String event = map.get("Event");
-//                if (Configuration.MESSAGE_SUBSCRIBE.equals(event)) {
-//                    // 订阅消息
-//                    reply = wxUtils.replyTextMessage(map, "你好，欢迎订阅房公信");
-//                } else if (Configuration.MESSAGE_UNSUBSCRIBE.equals(event)) {
-//                    // 取消订阅消息
-//                    reply = wxUtils.replyTextMessage(map, "。。。");
-//                }
-//                break;
-//            case Configuration.MESSAGE_IMAGE:
-//
-//                break;
-//            case Configuration.MESSAGE_LINK:
-//
-//                break;
-//
-//            default:
-//                break;
-//        }
-//
-//        return reply;
-//
+//    public <T> T sendTemplateMsg(TemplateMessage message, Class<T> c) {
+//        String sendUrl = MessageFormat.format(wxProperties.getApiUrl().getSendTemplateMsgUrl(), accessToken().getAccessToken());
+//        return restTemplate.postForObject(sendUrl, message, c);
 //    }
+
+    /**
+     * 发送模板消息
+     * @return
+     */
+    @Override
+    public String sendTemplateMsg(){
+        String url = WechatConst.URL_TEMPLATE_SEND.replace("ACCESS_TOKEN", accessToken().getAccessToken());
+        HttpHeaders headers = new HttpHeaders();
+        MediaType type = MediaType.parseMediaType("application/json; charset=UTF-8");
+        headers.setContentType(type);
+        headers.add("Accept", MediaType.APPLICATION_JSON.toString());
+        String msg = "{\"touser\": \"oyzG31DoJG4h2l8GXGf_NjJz_IZI\",\"url\": \"http://rxwnuu.natappfree.cc/wechat/wxReceive\",\"topcolor\": \"#000033\",\"data\": {\"first\": {\"value\": \"这里是标题\"},\"delivername\": {\"value\": \"顺风\"},\"ordername\": {\"value\": \"3432432\"},\"productName\": {\"value\": \"小白兔\"},\"productCount\": {\"value\": \"100件\"},\"remark\": {\"value\": \"这里是备注\"}},\"template_id\": \"jghn8MLQ59QfDyatxJTW_fYyZZrM6qrkVbzXf74HJZ8\"}";
+        HttpEntity<String> formEntity = new HttpEntity<String>(msg, headers);
+        String rep = restTemplate.postForObject(url, formEntity, String.class);
+        return rep;
+    }
 
 }

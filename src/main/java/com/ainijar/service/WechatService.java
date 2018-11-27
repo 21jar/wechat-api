@@ -12,4 +12,6 @@ public interface WechatService {
     String downloadQrCode(String ticket);
 
     boolean signature(String signature, String timestamp, String nonce);
+
+    String sendTemplateMsg();
 }
