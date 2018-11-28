@@ -1,12 +1,12 @@
 package com.ainijar.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 
 @Data
 public class WeixinTemplateMsg<E> {
     private String touser;
-    @JsonProperty("template_id")
+    @JSONField(name = "template_id")
     private String templateId;
     private String url;
     private String topcolor;

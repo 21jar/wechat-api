@@ -15,7 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
@@ -124,16 +123,15 @@ public class WechatServiceImpl implements WechatService {
      * @return
      */
     @Override
-    public String sendTemplateMsg(){
+    public boolean sendTemplateMsg(WeixinTemplateMsg weixinTemplateMsg){
         String url = WechatConst.URL_TEMPLATE_SEND.replace("ACCESS_TOKEN", accessToken().getAccessToken());
         HttpHeaders headers = new HttpHeaders();
         MediaType type = MediaType.parseMediaType("application/json; charset=UTF-8");
         headers.setContentType(type);
         headers.add("Accept", MediaType.APPLICATION_JSON.toString());
-        String msg = "{\"touser\": \"oyzG31DoJG4h2l8GXGf_NjJz_IZI\",\"url\": \"http://rxwnuu.natappfree.cc/wechat/wxReceive\",\"topcolor\": \"#000033\",\"data\": {\"first\": {\"value\": \"这里是标题\"},\"delivername\": {\"value\": \"顺风\"},\"ordername\": {\"value\": \"3432432\"},\"productName\": {\"value\": \"小白兔\"},\"productCount\": {\"value\": \"100件\"},\"remark\": {\"value\": \"这里是备注\"}},\"template_id\": \"jghn8MLQ59QfDyatxJTW_fYyZZrM6qrkVbzXf74HJZ8\"}";
-        HttpEntity<String> formEntity = new HttpEntity<String>(msg, headers);
-        String rep = restTemplate.postForObject(url, formEntity, String.class);
-        return rep;
+        HttpEntity<String> formEntity = new HttpEntity<>(JSON.toJSONString(weixinTemplateMsg), headers);
+        BaseResult rep = restTemplate.postForObject(url, formEntity, BaseResult.class);
+        return ResultCheck.isSuccess(rep);
     }
 
 }
