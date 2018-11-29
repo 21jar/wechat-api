@@ -128,8 +128,7 @@ public class WechatController {
         switch (WxMsgType.getByName(map.get("MsgType"))) {
             //处理事件消息
             case EVENT:
-                String eventType = root.elementTextTrim("Event");
-                String eventKey = root.elementTextTrim("EventKey");
+                String eventType = map.get("Event");
                 switch (WxEventType.getByName(eventType)) {
                     case TEMPLATE_SEND_JOB_FINISH:
                         //处理模版消息推送事件回调
@@ -141,6 +140,7 @@ public class WechatController {
                     case SUBSCRIBE:
                         //用户关注事件
                         log.info("用户关注事件");
+                        String eventKey = map.get("EventKey").split("_")[1];
                         // 绑定用户和openid
                         Query query = new Query();
                         query.addCriteria(Criteria.where("loginName").is(eventKey));
@@ -154,6 +154,8 @@ public class WechatController {
                         query1.addCriteria(Criteria.where("openid").is(openid));
                         Update update1 = Update.update("openid", null);
                         mongoTemplate.upsert(query1, update1, Const.ANHUI_USER);
+                        break;
+                    default:
                         break;
                 }
                 break;
