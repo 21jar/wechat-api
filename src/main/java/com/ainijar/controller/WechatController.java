@@ -83,7 +83,7 @@ public class WechatController {
         String loginName = "";
         Object userObj = redisUtil.get(Const.USER_PREFIX + ticket);
         if (userObj == null) {
-            loginName = restTemplate.getForObject(oaUrl + Const.OA_LOGINNAME_URL +"?ticket=" + ticket, String.class);
+            loginName = restTemplate.getForObject(oaUrl + Const.OA_LOGINNAME_URL + "?ticket=" + ticket, String.class);
         } else {
             JSONObject json = JSONObject.parseObject(userObj.toString());
             loginName = json.getString("loginName");
@@ -103,10 +103,8 @@ public class WechatController {
      * 处理微信消息的回调
      *
      * @param xml post消息内容
-     *
      * @return 消息处理结果
-     *
-     * @throws IOException xml读写异常
+     * @throws IOException       xml读写异常
      * @throws DocumentException xml转换异常
      */
     @PostMapping("/wxReceive")
