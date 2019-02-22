@@ -1,19 +1,17 @@
 package com.ainijar.controller;
 
 import com.ainijar.common.config.Result;
-import com.ainijar.common.constant.Const;
 import com.ainijar.common.constant.WxEventType;
 import com.ainijar.common.constant.WxMsgType;
-import com.ainijar.common.exception.BizException;
 import com.ainijar.common.util.RedisUtil;
 import com.ainijar.common.util.XmlUtil;
-import com.ainijar.model.*;
+import com.ainijar.model.AccessToken;
+import com.ainijar.model.QrCode;
+import com.ainijar.model.QrCodeResult;
 import com.ainijar.service.WechatService;
-import com.alibaba.fastjson.JSONObject;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -76,24 +74,13 @@ public class WechatController {
     @GetMapping("/downloadQrCode")
     @ApiOperation(value = "二维码图片接口", notes = "二维码图片接口")
     public Result downloadQrCode(HttpServletRequest request) {
-        String ticket = request.getHeader("ticket");
-        if (StringUtils.isBlank(ticket)) {
-            throw new BizException("error.unauthorized");
-        }
-        String loginName = "";
-        Object userObj = redisUtil.get(Const.USER_PREFIX + ticket);
-        if (userObj == null) {
-            loginName = restTemplate.getForObject(oaUrl + Const.OA_LOGINNAME_URL + "?ticket=" + ticket, String.class);
-        } else {
-            JSONObject json = JSONObject.parseObject(userObj.toString());
-            loginName = json.getString("loginName");
-        }
         QrCode qrCode = new QrCode();
         qrCode.setActionName(QrCode.QrCodeType.QR_STR_SCENE);
         qrCode.setExpireSeconds(2592000);
-        QrCode.Scene scene = new QrCode.Scene();
-        scene.setSceneStr(loginName);
-        qrCode.setActionInfo(new QrCode.ActionInfo(scene));
+        // 带参数二维码
+//        QrCode.Scene scene = new QrCode.Scene();
+//        scene.setSceneStr(loginName);
+//        qrCode.setActionInfo(new QrCode.ActionInfo(scene));
         QrCodeResult qrCodeResult = wechatService.createQrCode(qrCode);
         String url = wechatService.downloadQrCode(qrCodeResult.getTicket());
         return Result.success(url, "成功");
@@ -110,19 +97,21 @@ public class WechatController {
     @PostMapping("/wxReceive")
     public String receiveMessage(String signature, String timestamp, String nonce, @RequestBody(required = false) String xml, HttpServletRequest request) throws Exception {
         if (!wechatService.signature(signature, timestamp, nonce)) {
+            log.error("wechatService.signature(signature, timestamp, nonce) failed");
             return "failed";
         }
         String openid = request.getParameter("openid");
         Document document = DocumentHelper.parseText(xml);
         Element root = document.getRootElement();
         Map<String, String> map = XmlUtil.parseXml(xml);
+        log.info("MsgType {} Event {} ",map.get("MsgType"),map.get("Event"));
         //消息key,判断是否在15秒内收到过该消息,收到过直接返回
-        String msgKey = Objects.isNull(map.get("MsgID")) ? (map.get("FromUserName") + "_" + map.get("CreateTime")) : map.get("MsgID");
-        if (redisUtil.get(msgKey) != null) {
-            return "success";
-        }
-        //设置20秒缓存
-        redisUtil.setEx(msgKey, map.get("CreateTime"), (long) 20);
+//        String msgKey = Objects.isNull(map.get("MsgID")) ? (map.get("FromUserName") + "_" + map.get("CreateTime")) : map.get("MsgID");
+//        if (redisUtil.get(msgKey) != null) {
+//            return "success";
+//        }
+//        //设置20秒缓存
+//        redisUtil.setEx(msgKey, map.get("CreateTime"), (long) 20);
         switch (WxMsgType.getByName(map.get("MsgType"))) {
             //处理事件消息
             case EVENT:
@@ -139,19 +128,10 @@ public class WechatController {
                         //用户关注事件
                         log.info("用户关注事件");
                         String eventKey = map.get("EventKey").split("_")[1];
-                        // 绑定用户和openid
-                        Query query = new Query();
-                        query.addCriteria(Criteria.where("loginName").is(eventKey));
-                        Update update = Update.update("openid", openid);
-                        mongoTemplate.upsert(query, update, Const.ANHUI_USER);
                         break;
                     case UNSUBSCRIBE:
                         //用户取消关注事件
                         log.info("用户取消关注事件");
-                        Query query1 = new Query();
-                        query1.addCriteria(Criteria.where("openid").is(openid));
-                        Update update1 = Update.update("openid", null);
-                        mongoTemplate.upsert(query1, update1, Const.ANHUI_USER);
                         break;
                     default:
                         break;

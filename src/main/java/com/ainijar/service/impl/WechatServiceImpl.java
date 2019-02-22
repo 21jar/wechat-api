@@ -1,10 +1,12 @@
 package com.ainijar.service.impl;
 
 import com.ainijar.common.constant.WechatConst;
-import com.ainijar.common.util.RedisUtil;
+import com.ainijar.common.util.PropertiesUtil;
+import com.ainijar.common.util.RestUtil;
 import com.ainijar.model.*;
 import com.ainijar.service.WechatService;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,15 +35,19 @@ public class WechatServiceImpl implements WechatService {
     @Value("${appSecret}")
     private String appSecret;
 
+//    @Autowired
+//    RedisUtil redisUtil;
+
     @Autowired
-    RedisUtil redisUtil;
+    private RestUtil restUtil;
 
     @Autowired
     private RestTemplate restTemplate;
 
     synchronized private AccessToken refreshAccessToken() {
         try {
-            Object accessTokenObj = redisUtil.get(appId);
+            Object accessTokenObj = null;
+//            Object accessTokenObj = redisUtil.get(appId);
             if (Objects.isNull(accessTokenObj)) {
                 String url = WechatConst.URL_GET_ACCESSTOEKN
                         .replace("APPID", appId)
@@ -49,7 +55,7 @@ public class WechatServiceImpl implements WechatService {
                 AccessToken accessToken = restTemplate.getForObject(url, AccessToken.class);
                 if (ResultCheck.isSuccess(accessToken)) {
                     accessToken.setLastRefreshTime(System.currentTimeMillis());
-                    redisUtil.setEx(appId, JSON.toJSONString(accessToken), AccessToken.EXPIRE_TIME);
+//                    redisUtil.setEx(appId, JSON.toJSONString(accessToken), AccessToken.EXPIRE_TIME);
                 } else {
                     throw new Exception(accessToken.toString());
                 }
@@ -66,7 +72,8 @@ public class WechatServiceImpl implements WechatService {
 
     @Override
     public AccessToken accessToken() {
-        Object accessTokenObj = redisUtil.get(appId);
+        Object accessTokenObj = null;
+//        Object accessTokenObj = redisUtil.get(appId);
         if (Objects.nonNull(accessTokenObj)) {
             return JSON.parseObject(String.valueOf(accessTokenObj), AccessToken.class);
         }
@@ -87,7 +94,6 @@ public class WechatServiceImpl implements WechatService {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-//        return restTemplate.postForEntity(url,null, ByteArrayResource.class);
         return url;
     }
 
@@ -113,11 +119,6 @@ public class WechatServiceImpl implements WechatService {
         return signature.equals(str);
     }
 
-//    public <T> T sendTemplateMsg(TemplateMessage message, Class<T> c) {
-//        String sendUrl = MessageFormat.format(wxProperties.getApiUrl().getSendTemplateMsgUrl(), accessToken().getAccessToken());
-//        return restTemplate.postForObject(sendUrl, message, c);
-//    }
-
     /**
      * 发送模板消息
      * @return
@@ -132,6 +133,33 @@ public class WechatServiceImpl implements WechatService {
         HttpEntity<String> formEntity = new HttpEntity<>(JSON.toJSONString(weixinTemplateMsg), headers);
         BaseResult rep = restTemplate.postForObject(url, formEntity, BaseResult.class);
         return ResultCheck.isSuccess(rep);
+    }
+
+    /**
+     * 创建菜单
+     */
+    @Override
+    public void createMenu(String fileName) {
+        // 拼装创建菜单的url
+        String url = WechatConst.URL_CREATE_MENU.replace("ACCESS_TOKEN", accessToken().getAccessToken());
+        // 将菜单对象转换成json字符串
+        String jsonMenu = PropertiesUtil.readJsonData(fileName);
+        if (jsonMenu != null) {
+            // 调用接口创建菜单
+            JSONObject jsonObject = null;
+            try {
+                jsonObject = restUtil.restPostByBody(jsonMenu.getBytes("UTF-8"), url, JSONObject.class);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            if (null != jsonObject) {
+                if (0 != jsonObject.getInteger("errcode")) {
+                    log.error("create menu fail errcode:{} errmsg:{}", jsonObject.getInteger("errcode"), jsonObject.getString("errmsg"));
+                } else {
+                    log.info("create menu success errcode:{} errmsg:{}",jsonObject.getInteger("errcode"), jsonObject.getString("errmsg"));
+                }
+            }
+        }
     }
 
 }

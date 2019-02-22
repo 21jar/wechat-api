@@ -15,4 +15,6 @@ public interface WechatService {
     boolean signature(String signature, String timestamp, String nonce);
 
     boolean sendTemplateMsg(WeixinTemplateMsg weixinTemplateMsg);
+
+    void createMenu(String fileName);
 }
