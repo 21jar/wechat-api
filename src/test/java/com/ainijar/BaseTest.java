@@ -2,8 +2,9 @@ package com.ainijar;
 
 import com.ainijar.common.config.Result;
 import com.ainijar.controller.HelloWorld;
-import com.ainijar.model.WeixinTemplateMsg;
-import com.ainijar.service.WechatService;
+import com.ainijar.dto.BaseResult;
+import com.ainijar.dto.TemplateMessage;
+import com.ainijar.service.IWechatService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,7 @@ public class BaseTest {
     HelloWorld helloWorld;
 
     @Autowired
-    WechatService wechatService;
+    IWechatService IWechatService;
 
     @Test
     public void test1() throws Exception {
@@ -34,14 +35,14 @@ public class BaseTest {
 
     @Test
     public void test2() throws Exception {
-        WeixinTemplateMsg msg = new WeixinTemplateMsg();
+        TemplateMessage msg = new TemplateMessage();
         msg.setTemplateId("jghn8MLQ59QfDyatxJTW_fYyZZrM6qrkVbzXf74HJZ8");
         msg.setTopcolor("#000033");
         msg.setTouser("oyzG31DoJG4h2l8GXGf_NjJz_IZI");
         msg.setUrl("www.baidu.com");
 //        msg.setData();
 //        String msg = "{\"touser\": \"oyzG31DoJG4h2l8GXGf_NjJz_IZI\",\"url\": \"http://rxwnuu.natappfree.cc/wechat/wxReceive\",\"topcolor\": \"#000033\",\"data\": {\"first\": {\"value\": \"这里是标题\"},\"delivername\": {\"value\": \"顺风\"},\"ordername\": {\"value\": \"3432432\"},\"productName\": {\"value\": \"小白兔\"},\"productCount\": {\"value\": \"100件\"},\"remark\": {\"value\": \"这里是备注\"}},\"template_id\": \"jghn8MLQ59QfDyatxJTW_fYyZZrM6qrkVbzXf74HJZ8\"}";
-        boolean flag = wechatService.sendTemplateMsg(msg);
+        BaseResult flag = IWechatService.sendTemplateMsg(msg);
         System.out.println(flag);
     }
 

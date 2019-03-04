@@ -1,11 +1,8 @@
 package com.ainijar.service;
 
-import com.ainijar.model.AccessToken;
-import com.ainijar.model.QrCode;
-import com.ainijar.model.QrCodeResult;
-import com.ainijar.model.WeixinTemplateMsg;
+import com.ainijar.dto.*;
 
-public interface WechatService {
+public interface IWechatService {
     AccessToken accessToken();
 
     QrCodeResult createQrCode(QrCode qrCode);
@@ -14,7 +11,9 @@ public interface WechatService {
 
     boolean signature(String signature, String timestamp, String nonce);
 
-    boolean sendTemplateMsg(WeixinTemplateMsg weixinTemplateMsg);
+    BaseResult sendTemplateMsg(TemplateMessage templateMessage);
+
+    WechatUserInfo getUserInfo(String openid);
 
     void createMenu(String fileName);
 }

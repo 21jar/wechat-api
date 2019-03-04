@@ -65,7 +65,6 @@ public class XmlUtil {
         // 将解析结果存储在HashMap中
         Map<String, String> map = new HashMap<String, String>();
         InputStream inputStream = new ByteArrayInputStream(strXML.getBytes("UTF-8"));
-        System.out.println(inputStream.toString());
         // 读取输入流
         SAXReader reader = new SAXReader();
         Document document = reader.read(inputStream);
@@ -74,8 +73,9 @@ public class XmlUtil {
         // 得到根元素的所有子节点
         List<Element> elementList = root.elements();
         // 遍历所有子节点
-        for (Element e : elementList)
+        for (Element e : elementList) {
             map.put(e.getName(), e.getText());
+        }
         // 释放资源
         inputStream.close();
         inputStream = null;

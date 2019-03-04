@@ -3,8 +3,8 @@ package com.ainijar.service.impl;
 import com.ainijar.common.constant.WechatConst;
 import com.ainijar.common.util.PropertiesUtil;
 import com.ainijar.common.util.RestUtil;
-import com.ainijar.model.*;
-import com.ainijar.service.WechatService;
+import com.ainijar.dto.*;
+import com.ainijar.service.IWechatService;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ import java.util.Objects;
 
 @Slf4j
 @Service
-public class WechatServiceImpl implements WechatService {
+public class WechatServiceImpl implements IWechatService {
 
     @Value("${appId}")
     private String appId;
@@ -45,39 +45,39 @@ public class WechatServiceImpl implements WechatService {
     private RestTemplate restTemplate;
 
     synchronized private AccessToken refreshAccessToken() {
-        try {
-            Object accessTokenObj = null;
-//            Object accessTokenObj = redisUtil.get(appId);
-            if (Objects.isNull(accessTokenObj)) {
-                String url = WechatConst.URL_GET_ACCESSTOEKN
-                        .replace("APPID", appId)
-                        .replace("APPSECRET", appSecret);
-                AccessToken accessToken = restTemplate.getForObject(url, AccessToken.class);
-                if (ResultCheck.isSuccess(accessToken)) {
-                    accessToken.setLastRefreshTime(System.currentTimeMillis());
-//                    redisUtil.setEx(appId, JSON.toJSONString(accessToken), AccessToken.EXPIRE_TIME);
-                } else {
-                    throw new Exception(accessToken.toString());
-                }
-                return accessToken;
+               Object accessTokenObj = null;
+//        Object accessTokenObj = redisUtil.get(Const.APPID_PREFIX + appId);
+        if (accessTokenObj == null) {
+            String url = WechatConst.URL_GET_ACCESSTOEKN.replace("APPID", appId).replace("APPSECRET", appSecret);
+            AccessToken accessToken = restTemplate.getForObject(url, AccessToken.class);
+            if (ResultCheck.isSuccess(accessToken)) {
+                accessToken.setLastRefreshTime(System.currentTimeMillis());
+//                redisUtil.setEx(appId, JSON.toJSONString(accessToken), AccessToken.EXPIRE_TIME);
             } else {
-                return JSON.parseObject(String.valueOf(accessTokenObj), AccessToken.class);
+                log.error("refreshAccessToken fail errcode:{},errmsg:{}",accessToken.getErrCode(),accessToken.getErrMsg());
+                return null;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            log.error("获取accessToken失败：" + e.getMessage());
-            return null;
+            return accessToken;
+        } else {
+            return JSON.parseObject(String.valueOf(accessTokenObj), AccessToken.class);
         }
     }
 
     @Override
     public AccessToken accessToken() {
         Object accessTokenObj = null;
-//        Object accessTokenObj = redisUtil.get(appId);
+//        Object accessTokenObj = redisUtil.get(Const.APPID_PREFIX + appId);
         if (Objects.nonNull(accessTokenObj)) {
             return JSON.parseObject(String.valueOf(accessTokenObj), AccessToken.class);
         }
         return refreshAccessToken();
+    }
+
+    @Override
+    public WechatUserInfo getUserInfo(String openid) {
+        String url = WechatConst.URL_GET_USER_INFO.replace("ACCESS_TOKEN", accessToken().getAccessToken()).replace("OPENID", openid);
+        WechatUserInfo wechatUserInfo = restTemplate.getForObject(url, WechatUserInfo.class);
+        return wechatUserInfo;
     }
 
     @Override
@@ -124,15 +124,15 @@ public class WechatServiceImpl implements WechatService {
      * @return
      */
     @Override
-    public boolean sendTemplateMsg(WeixinTemplateMsg weixinTemplateMsg){
+    public BaseResult sendTemplateMsg(TemplateMessage templateMessage){
         String url = WechatConst.URL_TEMPLATE_SEND.replace("ACCESS_TOKEN", accessToken().getAccessToken());
         HttpHeaders headers = new HttpHeaders();
         MediaType type = MediaType.parseMediaType("application/json; charset=UTF-8");
         headers.setContentType(type);
         headers.add("Accept", MediaType.APPLICATION_JSON.toString());
-        HttpEntity<String> formEntity = new HttpEntity<>(JSON.toJSONString(weixinTemplateMsg), headers);
+        HttpEntity<String> formEntity = new HttpEntity<>(JSON.toJSONString(templateMessage), headers);
         BaseResult rep = restTemplate.postForObject(url, formEntity, BaseResult.class);
-        return ResultCheck.isSuccess(rep);
+        return rep;
     }
 
     /**

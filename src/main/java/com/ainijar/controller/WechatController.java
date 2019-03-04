@@ -5,10 +5,10 @@ import com.ainijar.common.constant.WxEventType;
 import com.ainijar.common.constant.WxMsgType;
 import com.ainijar.common.util.RedisUtil;
 import com.ainijar.common.util.XmlUtil;
-import com.ainijar.model.AccessToken;
-import com.ainijar.model.QrCode;
-import com.ainijar.model.QrCodeResult;
-import com.ainijar.service.WechatService;
+import com.ainijar.dto.AccessToken;
+import com.ainijar.dto.QrCode;
+import com.ainijar.dto.QrCodeResult;
+import com.ainijar.service.IWechatService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -19,16 +19,12 @@ import org.dom4j.Element;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 
 @RestController
 @Slf4j
@@ -37,7 +33,7 @@ import java.util.Objects;
 public class WechatController {
 
     @Autowired
-    private WechatService wechatService;
+    private IWechatService iWechatService;
 
     @Autowired
     RedisUtil redisUtil;
@@ -54,7 +50,7 @@ public class WechatController {
     @GetMapping("/accessToken")
     @ApiOperation(value = "接口", notes = "接口")
     public Result accessToken() {
-        AccessToken accessToken = wechatService.accessToken();
+        AccessToken accessToken = iWechatService.accessToken();
         return Result.success(accessToken, "成功");
     }
 
@@ -67,7 +63,7 @@ public class WechatController {
         QrCode.Scene scene = new QrCode.Scene();
         scene.setSceneStr("111");
         qrCode.setActionInfo(new QrCode.ActionInfo(scene));
-        QrCodeResult qrCodeResult = wechatService.createQrCode(qrCode);
+        QrCodeResult qrCodeResult = iWechatService.createQrCode(qrCode);
         return Result.success(qrCodeResult, "成功");
     }
 
@@ -81,8 +77,8 @@ public class WechatController {
 //        QrCode.Scene scene = new QrCode.Scene();
 //        scene.setSceneStr(loginName);
 //        qrCode.setActionInfo(new QrCode.ActionInfo(scene));
-        QrCodeResult qrCodeResult = wechatService.createQrCode(qrCode);
-        String url = wechatService.downloadQrCode(qrCodeResult.getTicket());
+        QrCodeResult qrCodeResult = iWechatService.createQrCode(qrCode);
+        String url = iWechatService.downloadQrCode(qrCodeResult.getTicket());
         return Result.success(url, "成功");
     }
 
@@ -96,8 +92,8 @@ public class WechatController {
      */
     @PostMapping("/wxReceive")
     public String receiveMessage(String signature, String timestamp, String nonce, @RequestBody(required = false) String xml, HttpServletRequest request) throws Exception {
-        if (!wechatService.signature(signature, timestamp, nonce)) {
-            log.error("wechatService.signature(signature, timestamp, nonce) failed");
+        if (!iWechatService.signature(signature, timestamp, nonce)) {
+            log.error("IWechatService.signature(signature, timestamp, nonce) failed");
             return "failed";
         }
         String openid = request.getParameter("openid");
@@ -157,7 +153,7 @@ public class WechatController {
      */
     @GetMapping("/wxReceive")
     public String signature(String signature, String timestamp, String nonce, String echostr) throws IOException {
-        if (wechatService.signature(signature, timestamp, nonce) && echostr != null) {
+        if (iWechatService.signature(signature, timestamp, nonce) && echostr != null) {
             return echostr;
         }
         return "failed";

@@ -1,4 +1,4 @@
-package com.ainijar.model;
+package com.ainijar.dto;
 
 import java.util.Objects;
 
