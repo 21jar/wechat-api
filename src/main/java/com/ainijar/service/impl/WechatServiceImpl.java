@@ -1,7 +1,9 @@
 package com.ainijar.service.impl;
 
+import com.ainijar.common.constant.Const;
 import com.ainijar.common.constant.WechatConst;
 import com.ainijar.common.util.PropertiesUtil;
+import com.ainijar.common.util.RedisUtil;
 import com.ainijar.common.util.RestUtil;
 import com.ainijar.dto.*;
 import com.ainijar.service.IWechatService;
@@ -10,7 +12,6 @@ import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -20,23 +21,14 @@ import org.springframework.web.client.RestTemplate;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Slf4j
 @Service
 public class WechatServiceImpl implements IWechatService {
 
-    @Value("${appId}")
-    private String appId;
-
-    @Value("${appSecret}")
-    private String appSecret;
-
-//    @Autowired
-//    RedisUtil redisUtil;
+    @Autowired
+    RedisUtil redisUtil;
 
     @Autowired
     private RestUtil restUtil;
@@ -44,15 +36,15 @@ public class WechatServiceImpl implements IWechatService {
     @Autowired
     private RestTemplate restTemplate;
 
-    synchronized private AccessToken refreshAccessToken() {
-               Object accessTokenObj = null;
-//        Object accessTokenObj = redisUtil.get(Const.APPID_PREFIX + appId);
+    synchronized private AccessToken refreshAccessToken(String appId, String appSecret) {
+//       Object accessTokenObj = null;
+        Object accessTokenObj = redisUtil.get(Const.APPID_PREFIX + appId);
         if (accessTokenObj == null) {
             String url = WechatConst.URL_GET_ACCESSTOEKN.replace("APPID", appId).replace("APPSECRET", appSecret);
             AccessToken accessToken = restTemplate.getForObject(url, AccessToken.class);
             if (ResultCheck.isSuccess(accessToken)) {
                 accessToken.setLastRefreshTime(System.currentTimeMillis());
-//                redisUtil.setEx(appId, JSON.toJSONString(accessToken), AccessToken.EXPIRE_TIME);
+                redisUtil.setEx(Const.APPID_PREFIX + appId, JSON.toJSONString(accessToken), AccessToken.EXPIRE_TIME);
             } else {
                 log.error("refreshAccessToken fail errcode:{},errmsg:{}",accessToken.getErrCode(),accessToken.getErrMsg());
                 return null;
@@ -64,26 +56,33 @@ public class WechatServiceImpl implements IWechatService {
     }
 
     @Override
-    public AccessToken accessToken() {
-        Object accessTokenObj = null;
-//        Object accessTokenObj = redisUtil.get(Const.APPID_PREFIX + appId);
+    public AccessToken accessToken(String appId, String appSecret) {
+//        Object accessTokenObj = null;
+        Object accessTokenObj = redisUtil.get(Const.APPID_PREFIX + appId);
         if (Objects.nonNull(accessTokenObj)) {
             return JSON.parseObject(String.valueOf(accessTokenObj), AccessToken.class);
         }
-        return refreshAccessToken();
+        return refreshAccessToken(appId, appSecret);
     }
 
     @Override
-    public WechatUserInfo getUserInfo(String openid) {
-        String url = WechatConst.URL_GET_USER_INFO.replace("ACCESS_TOKEN", accessToken().getAccessToken()).replace("OPENID", openid);
+    public WechatUserInfo getUserInfo(String appId, String appSecret, String openid) {
+        String url = WechatConst.URL_GET_USER_INFO.replace("ACCESS_TOKEN", accessToken(appId, appSecret).getAccessToken()).replace("OPENID", openid);
         WechatUserInfo wechatUserInfo = restTemplate.getForObject(url, WechatUserInfo.class);
         return wechatUserInfo;
     }
 
     @Override
-    public QrCodeResult createQrCode(QrCode qrCode) {
-        String url = WechatConst.URL_GET_QR_CODE.replace("TOKEN", accessToken().getAccessToken());
-        return restTemplate.postForObject(MessageFormat.format(url, accessToken().getAccessToken()), qrCode, QrCodeResult.class);
+    public Map oauth2GetAccesstoken(String appId, String appSecret, String code) {
+        String url = WechatConst.URL_OAUTH2_GET_ACCESSTOKEN.replace("APPID", appId).replace("SECRET", appSecret).replace("CODE", code);
+        String data = restTemplate.getForObject(url, String.class);
+        return JSONObject.parseObject(data);
+    }
+
+    @Override
+    public QrCodeResult createQrCode(QrCode qrCode, String appId, String appSecret) {
+        String url = WechatConst.URL_GET_QR_CODE.replace("TOKEN", accessToken(appId, appSecret).getAccessToken());
+        return restTemplate.postForObject(MessageFormat.format(url, accessToken(appId, appSecret).getAccessToken()), qrCode, QrCodeResult.class);
     }
 
     @Override
@@ -124,8 +123,8 @@ public class WechatServiceImpl implements IWechatService {
      * @return
      */
     @Override
-    public BaseResult sendTemplateMsg(TemplateMessage templateMessage){
-        String url = WechatConst.URL_TEMPLATE_SEND.replace("ACCESS_TOKEN", accessToken().getAccessToken());
+    public BaseResult sendTemplateMsg(TemplateMessage templateMessage, String appId, String appSecret){
+        String url = WechatConst.URL_TEMPLATE_SEND.replace("ACCESS_TOKEN", accessToken(appId, appSecret).getAccessToken());
         HttpHeaders headers = new HttpHeaders();
         MediaType type = MediaType.parseMediaType("application/json; charset=UTF-8");
         headers.setContentType(type);
@@ -139,9 +138,9 @@ public class WechatServiceImpl implements IWechatService {
      * 创建菜单
      */
     @Override
-    public void createMenu(String fileName) {
+    public void createMenu(String fileName, String appId, String appSecret) {
         // 拼装创建菜单的url
-        String url = WechatConst.URL_CREATE_MENU.replace("ACCESS_TOKEN", accessToken().getAccessToken());
+        String url = WechatConst.URL_CREATE_MENU.replace("ACCESS_TOKEN", accessToken(appId, appSecret).getAccessToken());
         // 将菜单对象转换成json字符串
         String jsonMenu = PropertiesUtil.readJsonData(fileName);
         if (jsonMenu != null) {

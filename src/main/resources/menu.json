@@ -1,0 +1,34 @@
+{
+  "button": [
+    {
+      "type":"view",
+      "name": "测试",
+      "url": "https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx40e6e013698de032&redirect_uri=http://erwmfx.natappfree.cc/view/history?appid=wx40e6e013698de032&response_type=code&scope=snsapi_base&state=1#wechat_redirect"
+    },
+    {
+      "name": "互动",
+      "sub_button": [
+        {
+          "type":"view",
+          "name": "咨询",
+          "url": "http://www.baidu.com"
+        },
+        {
+          "type":"view",
+          "name": "访谈",
+          "url": "http://www.baidu.com"
+        },
+        {
+          "type":"view",
+          "name": "网上",
+          "url": "http://www.baidu.com"
+        },
+        {
+          "type":"view",
+          "name": "意见",
+          "url": "http://www.baidu.com"
+        }
+      ]
+    }
+  ]
+}

@@ -44,13 +44,16 @@ public class WechatController {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    @Value("${oaUrl}")
-    private String oaUrl;
+    @Value("${appId}")
+    private String appId;
+
+    @Value("${appSecret}")
+    private String appSecret;
 
     @GetMapping("/accessToken")
     @ApiOperation(value = "接口", notes = "接口")
     public Result accessToken() {
-        AccessToken accessToken = iWechatService.accessToken();
+        AccessToken accessToken = iWechatService.accessToken(appId, appSecret);
         return Result.success(accessToken, "成功");
     }
 
@@ -63,7 +66,7 @@ public class WechatController {
         QrCode.Scene scene = new QrCode.Scene();
         scene.setSceneStr("111");
         qrCode.setActionInfo(new QrCode.ActionInfo(scene));
-        QrCodeResult qrCodeResult = iWechatService.createQrCode(qrCode);
+        QrCodeResult qrCodeResult = iWechatService.createQrCode(qrCode, appId, appSecret);
         return Result.success(qrCodeResult, "成功");
     }
 
@@ -77,7 +80,7 @@ public class WechatController {
 //        QrCode.Scene scene = new QrCode.Scene();
 //        scene.setSceneStr(loginName);
 //        qrCode.setActionInfo(new QrCode.ActionInfo(scene));
-        QrCodeResult qrCodeResult = iWechatService.createQrCode(qrCode);
+        QrCodeResult qrCodeResult = iWechatService.createQrCode(qrCode, appId, appSecret);
         String url = iWechatService.downloadQrCode(qrCodeResult.getTicket());
         return Result.success(url, "成功");
     }

@@ -8,6 +8,7 @@ import com.ainijar.service.IWechatService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -25,7 +26,13 @@ public class BaseTest {
     HelloWorld helloWorld;
 
     @Autowired
-    IWechatService IWechatService;
+    IWechatService iWechatService;
+
+    @Value("${appId}")
+    private String appId;
+
+    @Value("${appSecret}")
+    private String appSecret;
 
     @Test
     public void test1() throws Exception {
@@ -42,8 +49,13 @@ public class BaseTest {
         msg.setUrl("www.baidu.com");
 //        msg.setData();
 //        String msg = "{\"touser\": \"oyzG31DoJG4h2l8GXGf_NjJz_IZI\",\"url\": \"http://rxwnuu.natappfree.cc/wechat/wxReceive\",\"topcolor\": \"#000033\",\"data\": {\"first\": {\"value\": \"这里是标题\"},\"delivername\": {\"value\": \"顺风\"},\"ordername\": {\"value\": \"3432432\"},\"productName\": {\"value\": \"小白兔\"},\"productCount\": {\"value\": \"100件\"},\"remark\": {\"value\": \"这里是备注\"}},\"template_id\": \"jghn8MLQ59QfDyatxJTW_fYyZZrM6qrkVbzXf74HJZ8\"}";
-        BaseResult flag = IWechatService.sendTemplateMsg(msg);
+        BaseResult flag = iWechatService.sendTemplateMsg(msg, appId, appSecret);
         System.out.println(flag);
+    }
+
+    @Test
+    public void test13() {
+        iWechatService.createMenu("menu.json", appId, appSecret);
     }
 
 }
